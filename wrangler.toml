@@ -1,0 +1,11 @@
+name = "pgb"
+main = "src/index.ts"
+compatibility_date = "2026-08-22"
+preview_urls = false
+
+[secrets]
+# Set with `wrangler secret put`.
+required = ["SECRET_PATH"]
+
+[observability]
+enabled = true
