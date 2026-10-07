@@ -15,7 +15,7 @@ import {
 // A Request as the Workers runtime delivers it to fetch handlers.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
-const env: Env = { SECRET_PATH: "hook" };
+const env: Env = { SECRET_TOKEN: "s3cret" };
 const user = { id: 42, is_bot: false, first_name: "T", language_code: "zh" };
 const body = JSON.stringify({
     update_id: 1,
@@ -51,8 +51,9 @@ describe("request path", () => {
 
     bench("full webhook request", async () => {
         const res = await worker.fetch(
-            new IncomingRequest("https://pgb.example/hook", {
+            new IncomingRequest("https://pgb.example/", {
                 method: "POST",
+                headers: { "X-Telegram-Bot-Api-Secret-Token": "s3cret" },
                 body,
             }),
             env,

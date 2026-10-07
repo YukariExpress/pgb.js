@@ -1,12 +1,12 @@
 import { describe, it, expect } from "vitest";
-import worker, { isWebhookPath } from "./index";
+import worker from "./index";
 
 // A Request as the Workers runtime delivers it to fetch handlers.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 type IncomingRequest = InstanceType<typeof IncomingRequest>;
 
 describe("webhook handler", () => {
-    const env: Env = { SECRET_PATH: "hook" };
+    const env: Env = { SECRET_TOKEN: "s3cret" };
 
     const update = {
         update_id: 1,
@@ -23,10 +23,20 @@ describe("webhook handler", () => {
         },
     };
 
-    function post(body: unknown, path = "/hook"): IncomingRequest {
+    function post(
+        body: unknown,
+        secret: string | null = env.SECRET_TOKEN,
+        path = "/",
+    ): IncomingRequest {
+        const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+        };
+        if (secret !== null) {
+            headers["X-Telegram-Bot-Api-Secret-Token"] = secret;
+        }
         return new IncomingRequest(`https://pgb.example${path}`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers,
             body: typeof body === "string" ? body : JSON.stringify(body),
         });
     }
@@ -56,7 +66,7 @@ describe("webhook handler", () => {
     });
 
     it("rejects non-POST requests", async () => {
-        const res = await run(new IncomingRequest("https://pgb.example/hook"));
+        const res = await run(new IncomingRequest("https://pgb.example/"));
 
         expect(res.status).toBe(405);
     });
@@ -67,43 +77,29 @@ describe("webhook handler", () => {
         expect(res.status).toBe(400);
     });
 
-    it("answers on the webhook path with a trailing slash", async () => {
-        const res = await run(post(update, "/hook/"));
+    it("answers on any path", async () => {
+        const res = await run(post(update, env.SECRET_TOKEN, "/any/path"));
 
         expect(res.status).toBe(200);
         expect(await res.json()).toMatchObject({ method: "answerInlineQuery" });
     });
 
-    it.each([["/"], ["/other"], ["/hook/extra"], ["/hookx"], ["/hook//"]])(
-        "responds 404 on %s",
-        async (path) => {
-            const res = await run(post(update, path));
+    it.each([
+        ["a missing", null],
+        ["a wrong", "wrong"],
+        ["an empty", ""],
+    ])("rejects %s secret token", async (_, secret) => {
+        const res = await run(post(update, secret));
 
-            expect(res.status).toBe(404);
-        },
-    );
+        expect(res.status).toBe(401);
+    });
 
-    it("responds 404 to everything without a webhook path", async () => {
-        const res = await worker.fetch(post(update), {
+    it("rejects everything without a secret token", async () => {
+        const res = await worker.fetch(post(update, ""), {
             ...env,
-            SECRET_PATH: "",
+            SECRET_TOKEN: "",
         });
 
-        expect(res.status).toBe(404);
-    });
-});
-
-describe("isWebhookPath", () => {
-    it.each([
-        ["/hook", "hook", true],
-        ["/hook/", "hook", true],
-        ["/hook", "/hook/", true],
-        ["/hook/", "/hook", true],
-        ["/", "", false],
-        ["//", "/", false],
-        ["/hook/extra", "hook", false],
-        ["/Hook", "hook", false],
-    ])("matches %s against %s: %s", (pathname, secretPath, expected) => {
-        expect(isWebhookPath(pathname, secretPath)).toBe(expected);
+        expect(res.status).toBe(401);
     });
 });

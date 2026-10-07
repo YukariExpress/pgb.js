@@ -5,7 +5,7 @@ preview_urls = false
 
 [secrets]
 # Set with `wrangler secret put`.
-required = ["SECRET_PATH"]
+required = ["SECRET_TOKEN"]
 
 [observability]
 enabled = true

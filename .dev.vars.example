@@ -1,3 +1,4 @@
 # Copy to .dev.vars for `wrangler dev`.
-# Must match the path of the URL passed to setWebhook, without slashes.
-SECRET_PATH=change-me
+# Must match the secret_token passed to setWebhook: 1-256 characters of A-Z,
+# a-z, 0-9, _ and -.
+SECRET_TOKEN=change-me

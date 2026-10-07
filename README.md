@@ -33,7 +33,7 @@ npm run dev
 
 ## Deployment
 
-`SECRET_PATH` is a required secret. Since a new worker cannot have secrets set
+`SECRET_TOKEN` is a required secret. Since a new worker cannot have secrets set
 before its first deployment, pass it in a file the first time, in the same
 format as `.dev.vars.example`:
 
@@ -42,15 +42,16 @@ npx wrangler deploy --secrets-file <path-to-file>
 ```
 
 Afterwards, deploy with `npx wrangler deploy`, and change the secret with
-`npx wrangler secret put SECRET_PATH`.
+`npx wrangler secret put SECRET_TOKEN`.
 
-The worker only answers on `/<SECRET_PATH>`, with or without a trailing slash,
-and responds 404 to every other path. Then point the bot's webhook at that
-path, with `TOKEN` set to the bot token in your shell:
+The worker rejects requests without the `X-Telegram-Bot-Api-Secret-Token`
+header set to `SECRET_TOKEN`. Then point the bot's webhook at the worker,
+passing the same secret, with `TOKEN` set to the bot token in your shell:
 
 ```sh
 curl "https://api.telegram.org/bot${TOKEN}/setWebhook" \
-  -d url="https://pgb.<your-subdomain>.workers.dev/${SECRET_PATH}" \
+  -d url="https://pgb.<your-subdomain>.workers.dev/" \
+  -d secret_token="${SECRET_TOKEN}" \
   -d allowed_updates='["inline_query"]'
 ```
 

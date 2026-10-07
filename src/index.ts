@@ -18,9 +18,9 @@
  * Pgb is a Telegram inline bot that generates random results based on the
  * user's query text and the current time.
  *
- * It receives updates through a webhook, which must be registered with the URL
- * path set to SECRET_PATH. Inline queries are answered in the webhook response,
- * so the bot never calls the Bot API itself.
+ * It receives updates through a webhook, which must be registered with the
+ * secret_token set to SECRET_TOKEN. Inline queries are answered in the webhook
+ * response, so the bot never calls the Bot API itself.
  */
 
 import type {
@@ -46,28 +46,27 @@ export async function handler(query: InlineQuery): Promise<AnswerInlineQuery> {
 }
 
 /**
- * Reports whether a URL path is the secret webhook path, with or without a
- * trailing slash. Slashes around the secret path are ignored, and an empty
- * secret path never matches.
+ * Reports whether a request carries the webhook secret token in the
+ * X-Telegram-Bot-Api-Secret-Token header. An empty secret token never matches.
  */
-export function isWebhookPath(pathname: string, secretPath: string): boolean {
-    const path = secretPath.replace(/^\/+|\/+$/g, "");
-    return path !== "" && (pathname === `/${path}` || pathname === `/${path}/`);
+export function hasSecretToken(request: Request, secretToken: string): boolean {
+    return (
+        secretToken !== "" &&
+        request.headers.get("X-Telegram-Bot-Api-Secret-Token") === secretToken
+    );
 }
 
 export default {
     async fetch(request, env): Promise<Response> {
-        if (
-            !isWebhookPath(new URL(request.url).pathname, env.SECRET_PATH ?? "")
-        ) {
-            return new Response("Not Found", { status: 404 });
-        }
-
         if (request.method !== "POST") {
             return new Response("Method Not Allowed", {
                 status: 405,
                 headers: { Allow: "POST" },
             });
+        }
+
+        if (!hasSecretToken(request, env.SECRET_TOKEN ?? "")) {
+            return new Response("Unauthorized", { status: 401 });
         }
 
         let update: Update;
