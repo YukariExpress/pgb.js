@@ -22,6 +22,8 @@ import type {
     User,
 } from "typescript-telegram-bot-api";
 
+import { DEFAULT_LOCALE, DIVINE_TITLES, PIA_TITLE } from "./locales";
+
 /**
  * Length of the window, in seconds, during which the same user asking the same
  * question receives the same answer.
@@ -113,14 +115,22 @@ export function divine(ctx: UpdateContext): string {
     return `所求事项: ${ctx.query}\n结果: ${result}`;
 }
 
-/** Returns the localized titles for the divine and pia results. */
-export function getLocaleTitles(locale: string): [string, string] {
-    switch (locale) {
-        case "zh":
-            return ["求签", "Pia"];
-        default:
-            return ["Divination", "Pia"];
+/**
+ * Returns the localized title of the divine result. Looks up the language tag,
+ * removing subtags from the end until one matches as in RFC 4647 lookup, and
+ * falls back to DEFAULT_LOCALE.
+ */
+export function getDivineTitle(locale: string): string {
+    const subtags = locale.toLowerCase().split("-");
+
+    for (let n = subtags.length; n > 0; n--) {
+        const title = DIVINE_TITLES.get(subtags.slice(0, n).join("-"));
+        if (title) {
+            return title;
+        }
     }
+
+    return DIVINE_TITLES.get(DEFAULT_LOCALE)!;
 }
 
 /** Extracts the user ID. Returns 0 if the user is missing. */
@@ -177,19 +187,18 @@ export async function buildInlineQueryResults(
 ): Promise<InlineQueryResultArticle[]> {
     const locale = getUserLocale(user);
     const ctx = await buildUpdateContext(getUserID(user), query, locale, now);
-    const [divineTitle, piaTitle] = getLocaleTitles(locale);
 
     return [
         {
             type: "article",
             id: "divine",
-            title: divineTitle,
+            title: getDivineTitle(locale),
             input_message_content: { message_text: divine(ctx) },
         },
         {
             type: "article",
             id: "pia",
-            title: piaTitle,
+            title: PIA_TITLE,
             input_message_content: { message_text: pia(ctx) },
         },
     ];

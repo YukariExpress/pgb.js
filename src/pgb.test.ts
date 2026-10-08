@@ -9,7 +9,7 @@ import {
     buildUpdateContext,
     divine,
     getDivination,
-    getLocaleTitles,
+    getDivineTitle,
     getPiaPrefix,
     getUserID,
     getUserLocale,
@@ -122,11 +122,29 @@ describe("divine", () => {
     });
 });
 
-describe("getLocaleTitles", () => {
-    it("localizes titles", () => {
-        expect(getLocaleTitles("zh")).toEqual(["求签", "Pia"]);
-        expect(getLocaleTitles("en")).toEqual(["Divination", "Pia"]);
-        expect(getLocaleTitles("")).toEqual(["Divination", "Pia"]);
+describe("getDivineTitle", () => {
+    it.each([
+        ["zh", "求签"],
+        ["zh-hans", "求签"],
+        ["zh-hant", "求籤"],
+        ["zh-Hant-TW", "求籤"],
+        ["ZH-HANT", "求籤"],
+        ["ja", "おみくじ"],
+        ["de-AT", "Wahrsagung"],
+        ["fr", "Divination"],
+        ["ru", "Гадание"],
+        ["es-MX", "Adivinación"],
+        ["it", "Divinazione"],
+        ["la", "Divinatio"],
+        ["pt-BR", "Adivinhação"],
+        ["pt-PT", "Adivinhação"],
+        ["en", "Divination"],
+        ["en-US", "Divination"],
+        ["", "Divination"],
+        ["xx", "Divination"],
+        ["constructor", "Divination"],
+    ])("maps %s", (locale, expected) => {
+        expect(getDivineTitle(locale)).toBe(expected);
     });
 });
 
