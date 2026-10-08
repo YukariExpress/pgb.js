@@ -1,6 +1,6 @@
 name = "pgb"
 main = "src/index.ts"
-compatibility_date = "2026-08-22"
+compatibility_date = "2026-10-01"
 preview_urls = false
 
 [secrets]
@@ -8,4 +8,10 @@ preview_urls = false
 required = ["SECRET_TOKEN"]
 
 [observability]
+enabled = true
+
+[observability.traces]
+enabled = true
+
+[observability.issues]
 enabled = true
